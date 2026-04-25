@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FinMe — Financial Personality Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0D0D0F;
+      --surface: #17171A;
+      --surface2: #1F1F24;
+      --surface3: #28282E;
+      --border: rgba(255,255,255,0.08);
+      --border-mid: rgba(255,255,255,0.14);
+      --text: #F2F2F5;
+      --text-2: #9A9AAD;
+      --text-3: #5C5C72;
+      --accent: #7C6DFF;
+      --accent-glow: rgba(124,109,255,0.2);
+      --green: #3DD68C;
+      --green-bg: rgba(61,214,140,0.1);
+      --red: #F0604D;
+      --red-bg: rgba(240,96,77,0.1);
+      --amber: #F5A524;
+      --amber-bg: rgba(245,165,36,0.1);
+      --blue: #3B9EFF;
+      --blue-bg: rgba(59,158,255,0.1);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --font: 'Sora', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+    html { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+    body { min-height: 100vh; }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 2px; }
+
+    /* ===== LAYOUT ===== */
+    .app-shell {
+      display: flex; min-height: 100vh;
+    }
+
+    /* ===== SIDEBAR (desktop) ===== */
+    .sidebar {
+      width: 240px; flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 24px 16px;
+      position: sticky; top: 0; height: 100vh;
+    }
+    .sidebar-logo {
+      display: flex; align-items: center; gap: 10px;
+      padding: 0 8px; margin-bottom: 32px;
+    }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 10px;
+      background: var(--accent); display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .logo-name { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+    .logo-name span { color: var(--accent); }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px; border-radius: var(--radius-md);
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; transition: all 0.15s ease;
+      border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent-glow); color: var(--accent); }
+    .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 0 8px; }
+    .archetype-pill {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 10px 12px;
+      font-size: 12px; color: var(--text-2);
+    }
+    .archetype-pill .type-name { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 2px; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main {
+      flex: 1; display: flex; flex-direction: column;
+      min-width: 0; overflow-x: hidden;
+    }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 16px 32px; display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-title { font-size: 15px; font-weight: 600; }
+    .topbar-sub { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+    .topbar-actions { display: flex; gap: 8px; }
+    .btn-ghost {
+      background: none; border: 1px solid var(--border-mid); color: var(--text-2);
+      border-radius: var(--radius-sm); padding: 7px 14px; font-size: 12px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 0.15s;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-accent {
+      background: var(--accent); border: none; color: #fff;
+      border-radius: var(--radius-sm); padding: 7px 16px; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); transition: opacity 0.15s;
+    }
+    .btn-accent:hover { opacity: 0.85; }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; padding: 32px; }
+    .screen.active { display: block; }
+
+    /* ===== QUIZ SCREEN ===== */
+    .quiz-wrap { max-width: 600px; margin: 0 auto; }
+    .quiz-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .q-counter { font-size: 12px; color: var(--text-2); font-family: var(--mono); }
+    .q-pts { font-size: 12px; color: var(--accent); }
+    .progress-track { height: 3px; background: var(--surface3); border-radius: 2px; margin-bottom: 32px; }
+    .progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s cubic-bezier(0.4,0,0.2,1); }
+    .q-scenario {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 20px 24px; margin-bottom: 24px;
+      display: flex; gap: 14px; align-items: flex-start;
+    }
+    .scenario-icon { font-size: 24px; flex-shrink: 0; margin-top: 2px; }
+    .q-text { font-size: 18px; font-weight: 600; line-height: 1.5; letter-spacing: -0.02em; }
+    .options-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+    .option-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 20px;
+      cursor: pointer; transition: all 0.15s ease;
+      display: flex; align-items: flex-start; gap: 14px;
+    }
+    .option-card:hover { border-color: var(--border-mid); background: var(--surface2); }
+    .option-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+    .opt-letter {
+      width: 26px; height: 26px; border-radius: 8px; flex-shrink: 0;
+      background: var(--surface3); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--text-2); font-family: var(--mono);
+      margin-top: 1px;
+    }
+    .option-card.selected .opt-letter { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .opt-content .opt-main { font-size: 14px; font-weight: 500; color: var(--text); line-height: 1.5; }
+    .opt-content .opt-sub { font-size: 12px; color: var(--text-2); margin-top: 3px; }
+    .quiz-nav { display: flex; align-items: center; justify-content: space-between; }
+    .btn-back-quiz {
+      background: none; border: 1px solid var(--border-mid); color: var(--text-2);
+      border-radius: var(--radius-sm); padding: 10px 18px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: var(--font); transition: all 0.15s;
+    }
+    .btn-back-quiz:hover { color: var(--text); }
+    .btn-next-quiz {
+      background: var(--accent); border: none; color: #fff;
+      border-radius: var(--radius-sm); padding: 10px 24px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); opacity: 0.3; transition: all 0.15s;
+      pointer-events: none;
+    }
+    .btn-next-quiz.enabled { opacity: 1; pointer-events: all; }
+    .btn-next-quiz.enabled:hover { opacity: 0.85; }
+
+    /* ===== RESULT SCREEN ===== */
+    .result-hero {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 28px 32px; margin-bottom: 24px;
+      display: flex; gap: 20px; align-items: center;
+    }
+    .arch-emoji { font-size: 48px; flex-shrink: 0; }
+    .arch-info .arch-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; font-family: var(--mono); margin-bottom: 4px; }
+    .arch-info .arch-name { font-size: 26px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 6px; }
+    .arch-info .arch-tagline { font-size: 14px; color: var(--text-2); line-height: 1.5; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .stat-val { font-size: 24px; font-weight: 700; font-family: var(--mono); }
+    .stat-desc { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+
+    .section { margin-bottom: 28px; }
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-2); }
+
+    .traits-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .trait-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+    }
+    .trait-panel-title { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+    .trait-panel-title.good { color: var(--green); }
+    .trait-panel-title.bad { color: var(--red); }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; margin: 3px; }
+    .tag-green { background: var(--green-bg); color: var(--green); }
+    .tag-red { background: var(--red-bg); color: var(--red); }
+
+    .score-list { display: flex; flex-direction: column; gap: 10px; }
+    .score-row { display: flex; align-items: center; gap: 12px; }
+    .score-name { font-size: 13px; color: var(--text-2); width: 90px; flex-shrink: 0; }
+    .score-bar { flex: 1; height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+    .score-inner { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+    .score-pct { font-size: 12px; font-family: var(--mono); color: var(--text-2); width: 36px; text-align: right; }
+
+    /* ===== MISSION SCREEN ===== */
+    .mission-list { display: flex; flex-direction: column; gap: 12px; }
+    .mission-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 18px 20px;
+      display: flex; gap: 16px; align-items: flex-start;
+    }
+    .mission-icon { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+    .mission-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .mission-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+    .mission-badge {
+      display: inline-block; font-size: 11px; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px; margin-top: 8px;
+    }
+    .badge-easy { background: var(--green-bg); color: var(--green); }
+    .badge-med { background: var(--amber-bg); color: var(--amber); }
+    .badge-hard { background: var(--red-bg); color: var(--red); }
+
+    /* ===== TRACKER SCREEN ===== */
+    .insight-banner {
+      border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+    .insight-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .insight-text { font-size: 14px; line-height: 1.6; }
+    .behavior-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .behavior-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 18px;
+    }
+    .beh-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+    .beh-name { font-size: 13px; font-weight: 600; }
+    .beh-pct { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+    .beh-change { font-size: 12px; font-weight: 500; }
+    .up { color: var(--red); } .down { color: var(--green); } .same { color: var(--text-3); }
+    .mini-track { height: 5px; background: var(--surface3); border-radius: 3px; margin-top: 8px; }
+    .mini-fill { height: 100%; border-radius: 3px; }
+
+    /* ===== REMINDER SCREEN ===== */
+    .reminder-list { display: flex; flex-direction: column; gap: 10px; }
+    .reminder-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-lg); padding: 14px 18px;
+    }
+    .reminder-time { font-size: 11px; color: var(--text-3); font-family: var(--mono); margin-bottom: 5px; }
+    .reminder-text { font-size: 14px; line-height: 1.6; }
+
+    /* ===== AI SCREEN ===== */
+    .ai-wrap { max-width: 680px; }
+    .ai-profile-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 10px 14px; margin-bottom: 20px;
+      font-size: 12px; color: var(--text-2); display: flex; gap: 8px; align-items: center;
+    }
+    .ai-profile-chip strong { color: var(--accent); }
+    .chat-area {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 20px; min-height: 300px;
+      margin-bottom: 12px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .chat-msg { display: flex; gap: 10px; align-items: flex-start; }
+    .chat-msg.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+    }
+    .msg-avatar.ai { background: var(--accent-glow); color: var(--accent); font-size: 16px; }
+    .msg-avatar.user { background: var(--surface3); color: var(--text-2); font-size: 11px; }
+    .msg-bubble {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px 14px; font-size: 14px; line-height: 1.6;
+      max-width: 80%;
+    }
+    .chat-msg.user .msg-bubble { background: var(--accent-glow); border-color: var(--accent); }
+    .loading-dots span {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--text-3); margin: 0 2px;
+      animation: dot-bounce 1.2s ease infinite;
+    }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+    .chat-input-row { display: flex; gap: 10px; }
+    .chat-input {
+      flex: 1; background: var(--surface); border: 1px solid var(--border-mid);
+      color: var(--text); border-radius: var(--radius-md); padding: 12px 16px;
+      font-size: 14px; font-family: var(--font); outline: none;
+      transition: border-color 0.15s;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--text-3); }
+    .btn-send {
+      background: var(--accent); border: none; color: #fff;
+      border-radius: var(--radius-md); padding: 12px 20px; font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: var(--font); white-space: nowrap; transition: opacity 0.15s;
+    }
+    .btn-send:hover { opacity: 0.85; }
+
+    /* ===== MOBILE NAV ===== */
+    .mobile-nav {
+      display: none; position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      z-index: 100; padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+    }
+    .mobile-nav-inner { display: flex; }
+    .mobile-nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 6px 4px; cursor: pointer; border: none; background: none;
+      color: var(--text-3); font-family: var(--font); transition: color 0.15s;
+    }
+    .mobile-nav-item.active { color: var(--accent); }
+    .mobile-nav-item .nav-ico { font-size: 18px; }
+    .mobile-nav-item .nav-lbl { font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ===== WELCOME SCREEN ===== */
+    .welcome-wrap { max-width: 500px; margin: 60px auto 0; text-align: center; }
+    .welcome-icon { font-size: 60px; margin-bottom: 20px; }
+    .welcome-title { font-size: 32px; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 10px; }
+    .welcome-title span { color: var(--accent); }
+    .welcome-sub { font-size: 16px; color: var(--text-2); line-height: 1.7; margin-bottom: 32px; }
+    .welcome-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 32px; text-align: left; }
+    .feat-item {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 12px 14px;
+      font-size: 13px; color: var(--text-2); display: flex; gap: 8px;
+    }
+    .feat-icon { font-size: 16px; flex-shrink: 0; }
+    .btn-start {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius-lg); padding: 14px 36px;
+      font-size: 15px; font-weight: 700; font-family: var(--font);
+      cursor: pointer; transition: opacity 0.15s; width: 100%;
+    }
+    .btn-start:hover { opacity: 0.85; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { padding-bottom: 70px; }
+      .screen { padding: 20px 16px; }
+      .mobile-nav { display: block; }
+      .topbar { padding: 14px 16px; }
+      .result-hero { flex-direction: column; text-align: center; }
+      .traits-wrap { grid-template-columns: 1fr; }
+      .welcome-wrap { margin-top: 20px; }
+      .welcome-features { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 769px) {
+      .sidebar { display: flex; }
+      .mobile-nav { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">💰</div>
+      <div class="logo-name">Fin<span>Me</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="goTo('welcome')" id="nav-welcome">
+        <span class="nav-icon">🏠</span> Beranda
+      </button>
+      <button class="nav-item" onclick="goTo('quiz')" id="nav-quiz">
+        <span class="nav-icon">🧠</span> Quiz
+      </button>
+      <button class="nav-item" onclick="goTo('result')" id="nav-result">
+        <span class="nav-icon">🧬</span> Profil Saya
+      </button>
+      <button class="nav-item" onclick="goTo('mission')" id="nav-mission">
+        <span class="nav-icon">🎯</span> Misi
+      </button>
+      <button class="nav-item" onclick="goTo('reminder')" id="nav-reminder">
+        <span class="nav-icon">🔔</span> Pengingat
+      </button>
+      <button class="nav-item" onclick="goTo('tracker')" id="nav-tracker">
+        <span class="nav-icon">📊</span> Tracker
+      </button>
+      <button class="nav-item" onclick="goTo('ai')" id="nav-ai">
+        <span class="nav-icon">✨</span> Tanya AI
+      </button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="archetype-pill" id="sidebar-type-pill">
+        <div style="color:var(--text-3);font-size:11px;">Tipe kamu</div>
+        <div class="type-name" id="sidebar-type-name">Belum diketahui</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div>
+        <div class="topbar-title" id="topbar-title">Selamat datang</div>
+        <div class="topbar-sub" id="topbar-sub">Mulai dengan quiz untuk kenali tipe finansialmu</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn-ghost" onclick="goTo('quiz')">Ulangi Quiz</button>
+        <button class="btn-accent" onclick="goTo('ai')">✨ Tanya AI</button>
+      </div>
+    </header>
+
+    <!-- WELCOME SCREEN -->
+    <div class="screen active" id="screen-welcome">
+      <div class="welcome-wrap">
+        <div class="welcome-icon">💰</div>
+        <h1 class="welcome-title">Kenali <span>Kepribadian</span><br>Finansial Kamu</h1>
+        <p class="welcome-sub">Quiz interaktif 5 menit untuk tahu tipe keuanganmu, dapat misi personal, dan konsultasi sama AI coach.</p>
+        <div class="welcome-features">
+          <div class="feat-item"><span class="feat-icon">🧠</span> Quiz berbasis situasi nyata</div>
+          <div class="feat-item"><span class="feat-icon">🧬</span> 4 tipe kepribadian finansial</div>
+          <div class="feat-item"><span class="feat-icon">🎯</span> Misi personal tiap tipe</div>
+          <div class="feat-item"><span class="feat-icon">✨</span> AI coach 24/7</div>
+        </div>
+        <button class="btn-start" onclick="goTo('quiz')">Mulai Quiz Sekarang →</button>
+      </div>
+    </div>
+
+    <!-- QUIZ SCREEN -->
+    <div class="screen" id="screen-quiz">
+      <div class="quiz-wrap">
+        <div class="quiz-meta">
+          <span class="q-counter" id="q-counter">01 / 05</span>
+          <span class="q-pts" id="q-pts">+20 poin per jawaban</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" id="q-progress" style="width:0%"></div>
+        </div>
+        <div class="q-scenario">
+          <div class="scenario-icon" id="q-icon">💭</div>
+          <div class="q-text" id="q-text"></div>
+        </div>
+        <div class="options-grid" id="options"></div>
+        <div class="quiz-nav">
+          <button class="btn-back-quiz" id="btn-back" onclick="prevQ()" style="visibility:hidden">← Kembali</button>
+          <button class="btn-next-quiz" id="btn-next" onclick="nextQ()">Lanjut →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div class="screen" id="screen-result">
+      <div class="result-hero" id="result-hero">
+        <div class="arch-emoji" id="arch-emoji"></div>
+        <div class="arch-info">
+          <div class="arch-label">Tipe finansial kamu</div>
+          <div class="arch-name" id="arch-name"></div>
+          <div class="arch-tagline" id="arch-tagline"></div>
+        </div>
+      </div>
+      <div class="stats-row" id="stats-row"></div>
+      <div class="section">
+        <div class="section-head"><span class="section-title">Dimensi kepribadian</span></div>
+        <div class="score-list" id="score-list"></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><span class="section-title">Kekuatan & Kelemahan</span></div>
+        <div class="traits-wrap">
+          <div class="trait-panel">
+            <div class="trait-panel-title good">✓ Kekuatan</div>
+            <div id="strengths"></div>
+          </div>
+          <div class="trait-panel">
+            <div class="trait-panel-title bad">✕ Kelemahan</div>
+            <div id="weaknesses"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MISSION SCREEN -->
+    <div class="screen" id="screen-mission">
+      <div class="section-head" style="margin-bottom:16px"><span class="section-title">Misi minggu ini</span></div>
+      <div class="mission-list" id="mission-list"></div>
+    </div>
+
+    <!-- REMINDER SCREEN -->
+    <div class="screen" id="screen-reminder">
+      <div class="section-head" style="margin-bottom:16px"><span class="section-title">Smart reminders untuk tipe kamu</span></div>
+      <div class="reminder-list" id="reminder-list"></div>
+    </div>
+
+    <!-- TRACKER SCREEN -->
+    <div class="screen" id="screen-tracker">
+      <div class="insight-banner" id="insight-banner"></div>
+      <div class="section-head" style="margin-bottom:14px"><span class="section-title">Behavior tracking</span></div>
+      <div class="behavior-cards" id="behavior-cards"></div>
+    </div>
+
+    <!-- AI SCREEN -->
+    <div class="screen" id="screen-ai">
+      <div class="ai-wrap">
+        <div class="ai-profile-chip" id="ai-chip">
+          <span>🤖 AI coach kamu tau kamu tipe</span>
+          <strong id="ai-type-chip">—</strong>
+          <span>. Tanya apa aja soal keuangan!</span>
+        </div>
+        <div class="chat-area" id="chat-area">
+          <div class="chat-msg">
+            <div class="msg-avatar ai">✨</div>
+            <div class="msg-bubble">Halo! Aku udah baca profil finansial kamu. Mau tanya apa tentang kebiasaan keuangan atau cara improve ke depannya?</div>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" id="chat-input" type="text" placeholder="Tulis pertanyaanmu di sini..." />
+          <button class="btn-send" onclick="sendChat()">Kirim ↗</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-item active" onclick="goTo('welcome')" id="mnav-welcome">
+      <span class="nav-ico">🏠</span><span class="nav-lbl">Home</span>
+    </button>
+    <button class="mobile-nav-item" onclick="goTo('quiz')" id="mnav-quiz">
+      <span class="nav-ico">🧠</span><span class="nav-lbl">Quiz</span>
+    </button>
+    <button class="mobile-nav-item" onclick="goTo('result')" id="mnav-result">
+      <span class="nav-ico">🧬</span><span class="nav-lbl">Profil</span>
+    </button>
+    <button class="mobile-nav-item" onclick="goTo('mission')" id="mnav-mission">
+      <span class="nav-ico">🎯</span><span class="nav-lbl">Misi</span>
+    </button>
+    <button class="mobile-nav-item" onclick="goTo('tracker')" id="mnav-tracker">
+      <span class="nav-ico">📊</span><span class="nav-lbl">Tracker</span>
+    </button>
+    <button class="mobile-nav-item" onclick="goTo('ai')" id="mnav-ai">
+      <span class="nav-ico">✨</span><span class="nav-lbl">AI</span>
+    </button>
+  </div>
+</nav>
+
+<script>
+// ===== DATA =====
+const questions = [
+  {
+    icon: "💸",
+    text: "Kamu punya sisa 100rb di akhir minggu. Yang paling mungkin kamu lakuin?",
+    options: [
+      { main: "Langsung beli sesuatu yang udah lama diincar", sub: "Reward buat diri sendiri!", type: "I" },
+      { main: "Masukin ke tabungan, jaga-jaga aja", sub: "Lebih aman disimpen dulu", type: "S" },
+      { main: "Investasiin ke reksa dana atau saham", sub: "Biar uangnya kerja sendiri", type: "P" },
+      { main: "Gas aja buat hangout sama temen", sub: "YOLO, moment gak balik dua kali!", type: "Y" }
+    ]
+  },
+  {
+    icon: "🛍️",
+    text: "Lagi scroll dan nemu flash sale 50% off. Kamu biasanya...",
+    options: [
+      { main: "Checkout dulu, mikir nanti", sub: "Sayang banget kalau kehabisan", type: "I" },
+      { main: "Save dulu, compare harga di tempat lain", sub: "Harus yakin ini deal terbaik", type: "S" },
+      { main: "Cek dulu apakah ada di wishlist bulan depan", sub: "Stick to the plan dulu", type: "P" },
+      { main: "Kalau suka ya beli, hidup sekali!", sub: "Uang bisa dicari lagi", type: "Y" }
+    ]
+  },
+  {
+    icon: "✈️",
+    text: "Teman ngajak liburan dadakan minggu depan. Kamu...",
+    options: [
+      { main: "Langsung iya, booking sekarang!", sub: "Kapan lagi coba?", type: "Y" },
+      { main: "Cek tabungan dulu, kalau cukup baru iya", sub: "Gak mau boncos", type: "S" },
+      { main: "Lihat jadwal & anggaran liburan tahunan dulu", sub: "Sudah ada planning-nya", type: "P" },
+      { main: "Ikut, tapi cari cara paling hemat", sub: "Mau pergi tapi tetap smart", type: "I" }
+    ]
+  },
+  {
+    icon: "💰",
+    text: "Gajian! Hal pertama yang kamu lakuin sama uangnya?",
+    options: [
+      { main: "Transfer ke tabungan darurat dulu sebelum belanja", sub: "Ini wajib banget!", type: "S" },
+      { main: "Bayar tagihan, sisanya bebas dipakai", sub: "Yang penting kewajiban beres dulu", type: "I" },
+      { main: "Alokasiin sesuai budget yang udah dibuat", sub: "Udah ada spreadsheet-nya!", type: "P" },
+      { main: "Treat myself dulu, baru mikir sisanya", sub: "Kerja keras harus ada reward-nya", type: "Y" }
+    ]
+  },
+  {
+    icon: "🧠",
+    text: "Gimana kamu ngeliat uang sekarang ini?",
+    options: [
+      { main: "Alat buat nikmatin hidup sekarang", sub: "Future self bisa urus sendiri", type: "Y" },
+      { main: "Sesuatu yang harus dijaga dan dilindungi", sub: "Takut banget kehabisan", type: "S" },
+      { main: "Tools buat capai goals jangka panjang", sub: "Uang = instrumen investasi", type: "P" },
+      { main: "Buat dipakai, tapi kadang susah nahan", sub: "Momen lebih penting dari angka rekening", type: "I" }
+    ]
+  }
+];
+
+const archetypes = {
+  I: {
+    icon: "💸", name: "The Impulsive Spender", tagline: "Spontan, ekspresif, gampang tergoda diskon dan peluang menarik.",
+    scores: { Impulsif: [85,"#F0604D"], Hemat: [30,"#3B9EFF"], Planning: [35,"#3DD68C"], YOLO: [65,"#F5A524"] },
+    stats: [
+      { label: "Skor Impulsif", val: "85", desc: "dari 100" },
+      { label: "Transaksi/minggu", val: "12", desc: "rata-rata" },
+      { label: "% Tabungan", val: "5%", desc: "dari pemasukan" },
+      { label: "Risk Level", val: "Tinggi", desc: "terhadap pemborosan" }
+    ],
+    strengths: ["Fleksibel & adaptif", "Gampang bahagia", "Suka bagi-bagi", "Spontan"],
+    weaknesses: ["Gampang boros", "Susah nabung", "Sering nyesel beli", "Minim darurat"],
+    missions: [
+      { icon: "🚫", title: "No Spend Challenge 2 Hari", desc: "Coba 2 hari tanpa beli apapun selain kebutuhan pokok. Mulai dari besok!", badge: "Mudah", type: "easy" },
+      { icon: "📋", title: "Buat Wishlist 1 Minggu", desc: "Sebelum beli, masukin ke wishlist dulu. Beli hanya kalau masih mau setelah 7 hari.", badge: "Sedang", type: "med" },
+      { icon: "💰", title: "Tabung 20rb Hari Ini", desc: "Transfer 20rb ke rekening tabungan sebelum tengah hari ini.", badge: "Mudah", type: "easy" }
+    ],
+    reminders: [
+      { time: "Setiap sore 17.00", text: "Kamu hampir overbudget hari ini 👀 Cek pengeluaran sebelum beli apapun lagi." },
+      { time: "Saat mau checkout", text: "Tahan dulu! Ini beneran perlu atau cuma mau? Tunggu 10 menit sebelum bayar." },
+      { time: "Akhir minggu (Minggu 20.00)", text: "Recap: kamu udah belanja berapa kali minggu ini? Target: kurangi 1 pembelian impulsif." }
+    ],
+    insight: { type: "warn", tag: "Perlu Perhatian", text: "Kamu terdeteksi 3 transaksi impulsif dalam 7 hari terakhir. Kalau dihemat, bisa buat nabung 2 minggu penuh!" },
+    behaviors: [
+      { name: "Impulsif spending", pct: 85, change: "+12%", dir: "up", color: "#F0604D" },
+      { name: "Konsistensi nabung", pct: 25, change: "-5%", dir: "down", color: "#3B9EFF" },
+      { name: "Planning keuangan", pct: 30, change: "+3%", dir: "up", color: "#3DD68C" }
+    ]
+  },
+  S: {
+    icon: "🏦", name: "The Careful Saver", tagline: "Bijak, hati-hati, selalu siap dengan dana darurat di segala situasi.",
+    scores: { Impulsif: [20,"#F0604D"], Hemat: [90,"#3B9EFF"], Planning: [60,"#3DD68C"], YOLO: [15,"#F5A524"] },
+    stats: [
+      { label: "Skor Hemat", val: "90", desc: "dari 100" },
+      { label: "Bulan Dana Darurat", val: "6", desc: "bulan pengeluaran" },
+      { label: "% Tabungan", val: "30%", desc: "dari pemasukan" },
+      { label: "Risk Level", val: "Rendah", desc: "terhadap pemborosan" }
+    ],
+    strengths: ["Disiplin finansial", "Selalu siap darurat", "Tidak mudah berhutang", "Stabil"],
+    weaknesses: ["Terlalu pelit ke diri sendiri", "Takut investasi", "Overthinking", "Kurang enjoy"],
+    missions: [
+      { icon: "🎁", title: "Self-Reward yang Wajar", desc: "Izinkan dirimu beli 1 hal menyenangkan minggu ini, budget max 50rb.", badge: "Mudah", type: "easy" },
+      { icon: "📈", title: "Coba Investasi Kecil Pertama", desc: "Investasikan 10rb di reksa dana pasar uang. Rasain sensasinya!", badge: "Sedang", type: "med" },
+      { icon: "🍽️", title: "Makan di Luar Bareng Teman", desc: "Jadwalkan 1 makan di luar minggu ini. Sosialisasi itu investasi juga!", badge: "Mudah", type: "easy" }
+    ],
+    reminders: [
+      { time: "Setiap Jumat sore 16.00", text: "Saldo aman minggu ini! Jangan lupa sesekali self-reward — kamu udah kerja keras 💪" },
+      { time: "Saat transfer ke tabungan", text: "Tabungan on track! Tapi ingat, uang juga perlu 'dipekerjakan'. Pertimbangkan investasi." },
+      { time: "Akhir bulan", text: "Nabung bagus, tapi apakah kamu juga hidup cukup bahagia bulan ini?" }
+    ],
+    insight: { type: "good", tag: "Perkembangan Positif", text: "Kamu konsisten nabung 6 minggu berturut-turut! Coba alokasikan sedikit ke investasi agar uang bisa tumbuh lebih optimal." },
+    behaviors: [
+      { name: "Impulsif spending", pct: 15, change: "-8%", dir: "down", color: "#F0604D" },
+      { name: "Konsistensi nabung", pct: 92, change: "+5%", dir: "up", color: "#3B9EFF" },
+      { name: "Planning keuangan", pct: 62, change: "+2%", dir: "up", color: "#3DD68C" }
+    ]
+  },
+  P: {
+    icon: "🎯", name: "The Future Planner", tagline: "Strategis, terorganisir, selalu punya target dan roadmap yang jelas.",
+    scores: { Impulsif: [15,"#F0604D"], Hemat: [70,"#3B9EFF"], Planning: [95,"#3DD68C"], YOLO: [10,"#F5A524"] },
+    stats: [
+      { label: "Skor Planning", val: "95", desc: "dari 100" },
+      { label: "Goals Aktif", val: "4", desc: "target keuangan" },
+      { label: "% Investasi", val: "25%", desc: "dari pemasukan" },
+      { label: "Budget Accuracy", val: "94%", desc: "sesuai target" }
+    ],
+    strengths: ["Goals jelas & terukur", "Tidak mudah tergoda", "Disiplin budget", "Visioner"],
+    weaknesses: ["Terlalu kaku", "Susah spontan", "Terlalu kontrol", "Kurang fleksibel"],
+    missions: [
+      { icon: "🎯", title: "Naikkan Target Saving 10%", desc: "Review budget dan cari cara menaikkan alokasi tabungan/investasi sebesar 10%.", badge: "Sedang", type: "med" },
+      { icon: "🌟", title: "Spontan 1 Hal Minggu Ini", desc: "Izinkan 1 keputusan keuangan spontan tanpa planning berlebihan.", badge: "Sulit", type: "hard" },
+      { icon: "📊", title: "Review Portofolio Investasi", desc: "Cek performa investasi dan rebalancing jika alokasi sudah melenceng.", badge: "Sedang", type: "med" }
+    ],
+    reminders: [
+      { time: "Senin pagi 08.00", text: "Target bulan ini on track! 🎯 Review progress minggu lalu dan set priorities baru." },
+      { time: "Saat ada pengeluaran tak terduga", text: "Budget melenceng sedikit. Adjust kategori lain untuk tetap on track bulan ini." },
+      { time: "Akhir bulan (tanggal 28)", text: "Review bulanan: goals tercapai? Yuk update target dan alokasi bulan depan!" }
+    ],
+    insight: { type: "good", tag: "Konsisten Planner", text: "Kamu makin konsisten dengan perilaku Planner! 4 minggu berturut-turut budget tercapai. Excellent performance!" },
+    behaviors: [
+      { name: "Impulsif spending", pct: 12, change: "-15%", dir: "down", color: "#F0604D" },
+      { name: "Konsistensi nabung", pct: 88, change: "+7%", dir: "up", color: "#3B9EFF" },
+      { name: "Planning keuangan", pct: 96, change: "+4%", dir: "up", color: "#3DD68C" }
+    ]
+  },
+  Y: {
+    icon: "🔥", name: "The YOLO Spender", tagline: "Hidup untuk hari ini, uang untuk pengalaman dan momen berharga.",
+    scores: { Impulsif: [75,"#F0604D"], Hemat: [10,"#3B9EFF"], Planning: [15,"#3DD68C"], YOLO: [95,"#F5A524"] },
+    stats: [
+      { label: "Skor YOLO", val: "95", desc: "dari 100" },
+      { label: "Dana Darurat", val: "0.5", desc: "bulan pengeluaran" },
+      { label: "% Tabungan", val: "2%", desc: "dari pemasukan" },
+      { label: "Risk Level", val: "Kritis", desc: "terhadap pemborosan" }
+    ],
+    strengths: ["Berani ambil peluang", "Hidup penuh warna", "Mudah sosialisasi", "Optimis"],
+    weaknesses: ["Minim dana darurat", "Impulsif tinggi", "Susah mikir jangka panjang", "Rentan hutang"],
+    missions: [
+      { icon: "🆘", title: "Mulai Dana Darurat 50rb", desc: "Sisihkan 50rb sekarang untuk dana darurat pertamamu. Lock jangan disentuh!", badge: "Sulit", type: "hard" },
+      { icon: "📝", title: "Catat Pengeluaran 3 Hari", desc: "Hanya catat, tidak perlu berubah dulu. Lihat ke mana uang pergi selama ini.", badge: "Mudah", type: "easy" },
+      { icon: "⏰", title: "Tunggu 24 Jam Sebelum Beli >200rb", desc: "Setiap pembelian di atas 200rb, tunggu 24 jam dulu baru bayar.", badge: "Sedang", type: "med" }
+    ],
+    reminders: [
+      { time: "Setiap hari 09.00", text: "Hei YOLO-er! Pastikan saldo hari ini cukup untuk kebutuhan esok ya 😅" },
+      { time: "Saat saldo < 100rb", text: "Warning: saldo mulai menipis! Tahan diri 2 hari ke depan untuk balik ke zona aman." },
+      { time: "Akhir bulan", text: "Bulan ini seru? Tapi coba sisihkan 5% aja untuk masa depan. Future kamu juga butuh fun!" }
+    ],
+    insight: { type: "warn", tag: "Perlu Perhatian", text: "Kamu terdeteksi makin impulsif minggu ini! 5 transaksi non-esensial dalam 3 hari. Yuk coba rem sebentar ya." },
+    behaviors: [
+      { name: "Impulsif spending", pct: 92, change: "+18%", dir: "up", color: "#F0604D" },
+      { name: "Konsistensi nabung", pct: 8, change: "-3%", dir: "down", color: "#3B9EFF" },
+      { name: "Planning keuangan", pct: 12, change: "0%", dir: "same", color: "#3DD68C" }
+    ]
+  }
+};
+
+// ===== STATE =====
+let currentQ = 0, answers = [], currentType = null;
+
+// ===== NAVIGATION =====
+const screens = ['welcome','quiz','result','mission','reminder','tracker','ai'];
+const topTitles = {
+  welcome: ["Selamat datang 👋","Mulai dengan quiz untuk kenali tipe finansialmu"],
+  quiz: ["Quiz Kepribadian Finansial","Jawab 5 pertanyaan situasi nyata"],
+  result: ["Profil Finansialmu","Berdasarkan hasil quiz kamu"],
+  mission: ["Misi Personalmu","Challenge khusus untuk tipe kamu"],
+  reminder: ["Smart Reminders","Notifikasi disesuaikan kepribadianmu"],
+  tracker: ["Behavior Tracker","Pantau perkembangan finansialmu"],
+  ai: ["Tanya AI Coach","Konsultasi langsung dengan AI"]
+};
+
+function goTo(name) {
+  screens.forEach(s => {
+    document.getElementById('screen-'+s).classList.toggle('active', s === name);
+    const nav = document.getElementById('nav-'+s);
+    const mnav = document.getElementById('mnav-'+s);
+    if (nav) nav.classList.toggle('active', s === name);
+    if (mnav) mnav.classList.toggle('active', s === name);
+  });
+  const [title, sub] = topTitles[name] || ['FinMe',''];
+  document.getElementById('topbar-title').textContent = title;
+  document.getElementById('topbar-sub').textContent = sub;
+  window.scrollTo(0, 0);
+}
+
+// ===== QUIZ =====
+function renderQ() {
+  const q = questions[currentQ];
+  document.getElementById('q-counter').textContent = `0${currentQ+1} / 0${questions.length}`;
+  document.getElementById('q-progress').style.width = `${(currentQ/questions.length)*100}%`;
+  document.getElementById('q-icon').textContent = q.icon;
+  document.getElementById('q-text').textContent = q.text;
+  document.getElementById('btn-back').style.visibility = currentQ > 0 ? 'visible' : 'hidden';
+  document.getElementById('btn-next').classList.toggle('enabled', answers[currentQ] !== undefined);
+
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  const letters = ['A','B','C','D'];
+  q.options.forEach((o, i) => {
+    const card = document.createElement('button');
+    card.className = 'option-card' + (answers[currentQ] === o.type ? ' selected' : '');
+    card.innerHTML = `<div class="opt-letter">${letters[i]}</div><div class="opt-content"><div class="opt-main">${o.main}</div><div class="opt-sub">${o.sub}</div></div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      answers[currentQ] = o.type;
+      document.getElementById('btn-next').classList.add('enabled');
+    };
+    container.appendChild(card);
+  });
+}
+
+function prevQ() { if (currentQ > 0) { currentQ--; renderQ(); } }
+function nextQ() {
+  if (answers[currentQ] === undefined) return;
+  if (currentQ < questions.length - 1) { currentQ++; renderQ(); }
+  else finishQuiz();
+}
+
+function getType() {
+  const counts = { I:0, S:0, P:0, Y:0 };
+  answers.forEach(a => counts[a]++);
+  return Object.entries(counts).sort((a,b) => b[1]-a[1])[0][0];
+}
+
+function finishQuiz() {
+  currentType = getType();
+  const a = archetypes[currentType];
+
+  document.getElementById('arch-emoji').textContent = a.icon;
+  document.getElementById('arch-name').textContent = a.name;
+  document.getElementById('arch-tagline').textContent = a.tagline;
+  document.getElementById('sidebar-type-name').textContent = a.name;
+  document.getElementById('ai-type-chip').textContent = a.name;
+
+  // Stats
+  document.getElementById('stats-row').innerHTML = a.stats.map(s =>
+    `<div class="stat-card"><div class="stat-label">${s.label}</div><div class="stat-val">${s.val}</div><div class="stat-desc">${s.desc}</div></div>`
+  ).join('');
+
+  // Scores
+  document.getElementById('score-list').innerHTML = Object.entries(a.scores).map(([n,[v,c]]) =>
+    `<div class="score-row"><div class="score-name">${n}</div><div class="score-bar"><div class="score-inner" style="width:0%;background:${c}" data-val="${v}"></div></div><div class="score-pct">${v}%</div></div>`
+  ).join('');
+
+  // Traits
+  document.getElementById('strengths').innerHTML = a.strengths.map(s => `<span class="tag tag-green">${s}</span>`).join('');
+  document.getElementById('weaknesses').innerHTML = a.weaknesses.map(w => `<span class="tag tag-red">${w}</span>`).join('');
+
+  // Missions
+  document.getElementById('mission-list').innerHTML = a.missions.map(m =>
+    `<div class="mission-card"><div class="mission-icon">${m.icon}</div><div><div class="mission-title">${m.title}</div><div class="mission-desc">${m.desc}</div><span class="mission-badge badge-${m.type}">${m.badge}</span></div></div>`
+  ).join('');
+
+  // Reminders
+  document.getElementById('reminder-list').innerHTML = a.reminders.map(r =>
+    `<div class="reminder-card"><div class="reminder-time">🕐 ${r.time}</div><div class="reminder-text">${r.text}</div></div>`
+  ).join('');
+
+  // Tracker
+  const ins = a.insight;
+  const insColors = { good: 'border-color:#3DD68C;background:rgba(61,214,140,0.05)', warn: 'border-color:#F5A524;background:rgba(245,165,36,0.05)' };
+  const insTagColors = { good: 'color:#3DD68C', warn: 'color:#F5A524' };
+  document.getElementById('insight-banner').innerHTML = `<div class="insight-tag" style="${insTagColors[ins.type]}">⚡ ${ins.tag}</div><div class="insight-text">${ins.text}</div>`;
+  document.getElementById('insight-banner').style.cssText += insColors[ins.type];
+
+  document.getElementById('behavior-cards').innerHTML = a.behaviors.map(b =>
+    `<div class="behavior-card"><div class="beh-header"><div class="beh-name">${b.name}</div><div class="beh-pct">${b.pct}%</div></div><div class="beh-change ${b.dir}">${b.change} minggu ini</div><div class="mini-track"><div class="mini-fill" style="width:${b.pct}%;background:${b.color}"></div></div></div>`
+  ).join('');
+
+  goTo('result');
+  setTimeout(() => {
+    document.querySelectorAll('.score-inner').forEach(el => {
+      el.style.width = el.dataset.val + '%';
+    });
+  }, 200);
+}
+
+// ===== AI CHAT =====
+let chatHistory = [];
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendMsg('user', msg);
+  chatHistory.push({ role: 'user', content: msg });
+
+  const loadId = appendMsg('ai', null, true);
+
+  const type = currentType || 'I';
+  const a = archetypes[type];
+  const system = `Kamu adalah FinMe AI Coach, asisten keuangan personal yang ramah dan ngobrol dalam bahasa Indonesia gaul tapi tetap informatif dan akurat. User kamu adalah tipe finansial "${a.name}" (${a.tagline}). Kekuatan mereka: ${a.strengths.join(', ')}. Kelemahan: ${a.weaknesses.join(', ')}. Jawab pertanyaan dengan singkat (maksimal 4 kalimat), relatable, dan berikan saran actionable. Jangan terlalu formal. Gunakan emoji sesekali.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        system,
+        messages: chatHistory
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('') || 'Maaf, tidak bisa jawab sekarang. Coba lagi ya!';
+    chatHistory.push({ role: 'assistant', content: text });
+    updateMsg(loadId, text);
+  } catch(e) {
+    updateMsg(loadId, 'Koneksi ke AI gagal. Pastikan kamu online dan coba lagi ya!');
+  }
+}
+
+function appendMsg(role, text, loading = false) {
+  const area = document.getElementById('chat-area');
+  const id = 'msg-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'chat-msg' + (role === 'user' ? ' user' : '');
+  div.id = id;
+  const avatarContent = role === 'ai' ? '✨' : 'Kamu';
+  div.innerHTML = `<div class="msg-avatar ${role}">${avatarContent}</div><div class="msg-bubble">${loading ? '<div class="loading-dots"><span></span><span></span><span></span></div>' : text}</div>`;
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+  return id;
+}
+
+function updateMsg(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.querySelector('.msg-bubble').textContent = text;
+}
+
+// ===== INIT =====
+document.getElementById('chat-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+renderQ();
+</script>
+</body>
+</html>
